@@ -3,7 +3,7 @@
 SRC=../src
 EXEC=${SRC}/intersectionLignes
 HISTDIR=../hist
-IMAGE=../img
+IMGDIR=../img
 
 if [ ! -e ../hist/*.hist ];
 then
@@ -15,7 +15,14 @@ then
 	make -C ${SRC};
 fi
 
-for image in ../img/*.jpg;
+HISTOS=""
+for histo in ${HISTDIR}/*.hist;
 do
-  ${EXEC} ${HISTDIR}/*.hist ${image};
+	HISTOS=${HISTOS}"${histo} ";
+done
+echo ${HISTOS};
+
+for image in ${IMGDIR}/*.jpg;
+do
+  echo "${EXEC} ${HISTOS} ${image}";
 done
