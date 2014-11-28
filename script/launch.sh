@@ -24,5 +24,5 @@ echo ${HISTOS};
 
 for image in ${IMGDIR}/*.jpg;
 do
-  echo "${EXEC} ${HISTOS} ${image}";
+  ${EXEC} ${image};
 done
