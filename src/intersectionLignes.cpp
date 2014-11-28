@@ -23,9 +23,17 @@ void issueOpeningVideo()
 
 void detectFeatures(Mat& img, std::vector<KeyPoint>& keypoints)
 {
-	int minHessian = 500;
-	SurfFeatureDetector detector(minHessian);
+	int minHessian = 12;
+	FastFeatureDetector detector(minHessian);
 	detector.detect( img, keypoints);
+
+	for(int j=0; j<keypoints.size();j++) 
+	  {
+	    // Setup a rectangle to define your region of interest
+	    cv::Rect MagicCropstem(keypoints[i].Point.x - 5, keypoints[i].Point.y - 5, 10, 10);
+	    Mat crop = image(MagicCropstem);
+	    
+	  }
 }
 
 //void detectFeaturesMaison(Mat& im, std::vector<KeyPoint>& keypoints)
@@ -58,13 +66,15 @@ int main(int argc , char** argv )
 	keypoints.clear();
 	gettimeofday(&t1,NULL);
 
-  detectFeatures(img, keypoints);
-
+	detectFeatures(img, keypoints);
+	
 	gettimeofday(&t2,NULL);
 
 	std::cout<<"Time elapsed "<<(t2.tv_sec-t1.tv_sec)*1000000+(t2.tv_usec-t1.tv_usec)<<"µs"<<std::endl;
 	}
 	drawKeypoints( img, keypoints, img_keypoints, Scalar::all(-1), DrawMatchesFlags::DEFAULT );
+
+
 	namedWindow("frame",1);
 	imshow("frame",img);
 	imshow("frame",img_keypoints);
