@@ -12,82 +12,68 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include <sys/time.h>
 using namespace cv;
+using namespace std;
 
 void readme()
-{ std::cout << " Usage: ./intersectionLignes <img1> " << std::endl; }
+{ std::cout << " Usage: ./intersectionLignes <img> <img clip> " << std::endl; }
 
 void issueOpeningVideo()
 { std::cout << "couldn't open video file" << std::endl; }
 
-
-
-void detectFeatures(Mat& img, std::vector<KeyPoint>& keypoints)
+void detectFeatures(Mat& img, Mat& clip, std::vector<KeyPoint>& keypoints)
 {
 	int minHessian = 12;
 	FastFeatureDetector detector(minHessian);
-	detector.detect( img, keypoints, img);
+	detector.detect( img, keypoints, clip);
 
-	for(uint i=0; i<keypoints.size();i++) 
-	  {
-	    // Setup a rectangle to define your region of interest
-			int ps=50;
-			if( keypoints[i].pt.x-ps>0 && keypoints[i].pt.x+ps<img.cols
-					&& keypoints[i].pt.y-ps>0 && keypoints[i].pt.y+ps<img.rows)
-			{
-	    	cv::Rect MagicCropstem(keypoints[i].pt.x - ps/2, keypoints[i].pt.y - ps/2, ps, ps);
-	    	Mat crop = img(MagicCropstem);
-				imshow("crop "+i, crop);
-			}
-	  }
-}
-
+	std::vector<KeyPoint>::iterator it = keypoints.begin();
+	int i=0;
+	for(; it != keypoints.end();it++) 
+	{
+		// Setup a rectangle to define your region of interest
+		int ps=50;
+		if( (*it).pt.x-ps>0 && (*it).pt.x+ps<img.cols
+				&& (*it).pt.y-ps>0 && (*it).pt.y+ps<img.rows)
+		{
+			cv::Rect MagicCropstem((*it).pt.x - ps/2, (*it).pt.y - ps/2, ps, ps);
+			Mat crop = img(MagicCropstem);
+			imshow("crop"+ (i++), crop);
+		}
+	}
 
 int main(int argc , char** argv )
 {
-
-	if(argc<2)
-	{
-	readme();
-	return -1;
+	if(argc!=3) {
+		readme();
+		return -1;
 	}
 	struct timeval t1, t2;
 	/* VideoCapture cap((string)argv[1]);
-        if(!cap.isOpened())
-	{
-	 issueOpeningVideo();
-         return -1;
-	}*/
+		 if(!cap.isOpened())
+		 {
+		 issueOpeningVideo();
+		 return -1;
+		 }*/
 
 	Mat img_keypoints;
 	std::vector<KeyPoint> keypoints;
-	Mat img = imread( argv[1], CV_LOAD_IMAGE_GRAYSCALE );
-	for(int i=0; i<10; i++) {
-	keypoints.clear();
-	gettimeofday(&t1,NULL);
+	Mat img = imread( argv[1]);
+	Mat clip = imread( argv[2],CV_LOAD_IMAGE_GRAYSCALE);
 
-	detectFeatures(img, keypoints);
-	
-	gettimeofday(&t2,NULL);
+	//for(int i=0; i<10; i++) {
+		keypoints.clear();
+		gettimeofday(&t1,NULL);
 
-	std::cout<<"Time elapsed "<<(t2.tv_sec-t1.tv_sec)*1000000+(t2.tv_usec-t1.tv_usec)<<"µs"<<std::endl;
-	}
+		detectFeatures(img,clip,keypoints);
+
+		gettimeofday(&t2,NULL);
+
+		std::cout<<"Time elapsed "<<(t2.tv_sec-t1.tv_sec)*1000000+(t2.tv_usec-t1.tv_usec)<<"µs"<<std::endl;
+	//}
+
 	drawKeypoints( img, keypoints, img_keypoints, Scalar::all(-1), DrawMatchesFlags::DEFAULT );
-
-
-	namedWindow("frame",1);
-	imshow("frame",img);
 	imshow("frame",img_keypoints);
 	waitKey();
 
-
-	/*while(1)
-        {
-        if(!cap.read(frame))
-        break;	
-	waitKey();
-	if(waitKey(30)>=0)
-	break;
-	}*/
-	return -1;
-
+	return 0;
 }
