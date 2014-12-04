@@ -25,21 +25,21 @@ void detectFeatures(Mat& img, std::vector<KeyPoint>& keypoints)
 {
 	int minHessian = 12;
 	FastFeatureDetector detector(minHessian);
-	detector.detect( img, keypoints);
+	detector.detect( img, keypoints, img);
 
-	for(int j=0; j<keypoints.size();j++) 
+	for(uint i=0; i<keypoints.size();i++) 
 	  {
 	    // Setup a rectangle to define your region of interest
-	    cv::Rect MagicCropstem(keypoints[i].Point.x - 5, keypoints[i].Point.y - 5, 10, 10);
-	    Mat crop = image(MagicCropstem);
-	    
+			int ps=50;
+			if( keypoints[i].pt.x-ps>0 && keypoints[i].pt.x+ps<img.cols
+					&& keypoints[i].pt.y-ps>0 && keypoints[i].pt.y+ps<img.rows)
+			{
+	    	cv::Rect MagicCropstem(keypoints[i].pt.x - ps/2, keypoints[i].pt.y - ps/2, ps, ps);
+	    	Mat crop = img(MagicCropstem);
+				imshow("crop "+i, crop);
+			}
 	  }
 }
-
-//void detectFeaturesMaison(Mat& im, std::vector<KeyPoint>& keypoints)
-//{
-//	
-//}
 
 
 int main(int argc , char** argv )
@@ -51,8 +51,7 @@ int main(int argc , char** argv )
 	return -1;
 	}
 	struct timeval t1, t2;
-	// 
-       /* VideoCapture cap((string)argv[1]);
+	/* VideoCapture cap((string)argv[1]);
         if(!cap.isOpened())
 	{
 	 issueOpeningVideo();
