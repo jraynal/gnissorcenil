@@ -20,26 +20,55 @@ void readme()
 void issueOpeningVideo()
 { std::cout << "couldn't open video file" << std::endl; }
 
+void eraseUselessKeypoints(vector<KeyPoint> keypoints, vector<KeyPoint>::iterator it, vector<Rect*> rects) {
+	vector<KeyPoint>::iterator tmp = it+1;
+	if(!rects.empty()) {
+		vector<Rect*>::iterator rit = rects.begin();
+		for(;rit!=rects.end();rit++) {
+			if((*rit)->contains((*it).pt)) {
+				keypoints.erase(tmp);
+				tmp=it+1;	
+				if(tmp==keypoints.end())
+					break;
+			}	
+		}
+	}	
+}
+
+bool testKeypoint(Mat& img, vector<KeyPoint>::iterator it, int ps) {
+	return (*it).pt.x-ps>0 && (*it).pt.x+ps<img.cols  // Test Rows
+			&& (*it).pt.y-ps>0 && (*it).pt.y+ps<img.rows; // Test Columns
+}
+
+void selectSubPics(Mat& img, vector<KeyPoint> keypoints, vector<Rect*> rects) {
+	vector<KeyPoint>::iterator it = keypoints.begin();
+	for(; it != keypoints.end();it++) 
+	{
+		// Setup a rectangle to define your region of interest
+		int ps=50; // Picture Size
+		//eraseUselessKeypoints(keypoints,it,rects);	
+		if(testKeypoint(img,it,ps))
+		{
+			cv::Rect MagicCropstem((*it).pt.x - ps/2, (*it).pt.y - ps/2, ps, ps);
+			Mat crop = img(MagicCropstem);
+			rects.push_back(&MagicCropstem);
+			//imshow("crop",crop);
+			//waitKey();
+		}
+	}
+	return;
+}
+
 void detectFeatures(Mat& img, Mat& clip, std::vector<KeyPoint>& keypoints)
 {
 	int minHessian = 12;
 	FastFeatureDetector detector(minHessian);
 	detector.detect( img, keypoints, clip);
 
-	std::vector<KeyPoint>::iterator it = keypoints.begin();
-	int i=0;
-	for(; it != keypoints.end();it++) 
-	{
-		// Setup a rectangle to define your region of interest
-		int ps=50;
-		if( (*it).pt.x-ps>0 && (*it).pt.x+ps<img.cols
-				&& (*it).pt.y-ps>0 && (*it).pt.y+ps<img.rows)
-		{
-			cv::Rect MagicCropstem((*it).pt.x - ps/2, (*it).pt.y - ps/2, ps, ps);
-			Mat crop = img(MagicCropstem);
-			imshow("crop"+ (i++), crop);
-		}
-	}
+	vector<Rect*> rects;
+	selectSubPics(img,keypoints,rects);
+	return;
+}
 
 int main(int argc , char** argv )
 {
