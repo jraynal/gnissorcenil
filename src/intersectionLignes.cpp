@@ -20,7 +20,7 @@ void issueOpeningVideo()
  * Filtre les points singuliers inutiles car déjà compris dans un autre
  * rectangle.
  **/
-bool eraseUselessKeypoints(vector<KeyPoint>& keypoints, uint* index, vector<Rect*>& rects) {
+bool unselectUselessKeypoints(vector<KeyPoint>& keypoints, uint* index, vector<Rect*>& rects) {
 	if(!rects.empty()) {
 		vector<Rect*>::iterator rit = rects.begin();
 		for(;rit!=rects.end();rit++) {
@@ -55,15 +55,15 @@ void selectSubPics(Mat& img, vector<KeyPoint>& keypoints, vector<Rect*>& rects) 
 		it=&keypoints[i];
 		// Setup a rectangle to define your region of interest
 		int ps=50; // Picture Size
-		if(eraseUselessKeypoints(keypoints,&i,rects))
+		if(unselectUselessKeypoints(keypoints,&i,rects))
 			continue;
 		if(testKeypoint(img,(*it),ps)) {
 			cv::Rect MagicCropstem((*it).pt.x - ps/2, (*it).pt.y - ps/2, ps, ps);
 			Mat crop = img(MagicCropstem);
 			rects.push_back(&MagicCropstem);
 			new_keypoints.push_back(keypoints[i]);
-//			imshow("crop",crop);
-//			waitKey();
+			//imshow("crop",crop);
+			//waitKey();
 		}
 	}
 	keypoints.clear();
