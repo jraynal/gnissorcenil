@@ -20,16 +20,10 @@ void issueOpeningVideo()
  * Filtre les points singuliers inutiles car déjà compris dans un autre
  * rectangle.
  **/
-bool unselectUselessKeypoints(vector<KeyPoint>& keypoints, uint* index, vector<Rect*>& rects) {
+bool unselectUselessKeypoints(vector<KeyPoint>& keypoints, uint index, vector<Rect>& rects) {
 	if(!rects.empty()) {
-		vector<Rect*>::iterator rit = rects.begin();
-		for(;rit!=rects.end();rit++) {
-			if((*rit)->contains(keypoints[(*index)].pt)) {
-			//	vector<KeyPoint>::iterator tmp = keypoints.begin()+(*index);
-			//	cout<<(*tmp).pt<<endl;
-			//	keypoints.erase(tmp);
-			//	cout<<"Skipped point "<<(*index)<<" / "<<keypoints.size()<<endl;
-			//	(*index)--;
+		for(uint i=0;i<rects.size();i++) {
+			if(rects[i].contains(keypoints[index].pt)) {
 				return true;
 			}
 		}
@@ -45,23 +39,45 @@ bool testKeypoint(Mat& img, KeyPoint& it, int ps) {
 			&& it.pt.y-ps>0 && it.pt.y+ps<img.rows; // Test Columns
 }
 
+void gradientPicHistogram(Mat& simg) {	
+	Mat histo = Mat::zeros(Size(511,511), CV_32S);
+	int h=simg.rows, w=simg.cols;
+	double max_hist=0;
+	int tmp=0;
+	for(int i=0; i<w; i++) {
+		for(int j=0; j<h; j++) {
+			int x_grad=simg.at<uchar>(j,((i-1)<0)?i:i-1)-simg.at<uchar>(j,((i+1)>w)?i:i+1);
+			int y_grad=simg.at<uchar>(((j-1)<0)?j:j-1,i)-simg.at<uchar>(((j+1)>w)?j:j+1,i);
+			tmp=(histo.at<int32_t>(256+x_grad,256+y_grad)++);
+			if(tmp>max_hist) {
+				max_hist=(double)tmp;
+			}
+		}
+	}
+	histo*(255./max_hist);
+	imshow("hist", histo);
+	waitKey();
+	return;
+}
+
 /**
  * Selectionne les sous image sur lesquelles effectuer le traitement
  **/
-void selectSubPics(Mat& img, vector<KeyPoint>& keypoints, vector<Rect*>& rects) {
+void selectSubPics(Mat& img, vector<KeyPoint>& keypoints, vector<Rect>& rects) {
 	KeyPoint* it;
 	vector<KeyPoint> new_keypoints;
 	for(uint i=0; i<keypoints.size() ; i++) {
 		it=&keypoints[i];
 		// Setup a rectangle to define your region of interest
 		int ps=50; // Picture Size
-		if(unselectUselessKeypoints(keypoints,&i,rects))
+		if(unselectUselessKeypoints(keypoints,i,rects))
 			continue;
 		if(testKeypoint(img,(*it),ps)) {
 			cv::Rect MagicCropstem((*it).pt.x - ps/2, (*it).pt.y - ps/2, ps, ps);
 			Mat crop = img(MagicCropstem);
-			rects.push_back(&MagicCropstem);
+			rects.push_back(MagicCropstem);
 			new_keypoints.push_back(keypoints[i]);
+			gradientPicHistogram(crop);
 			//imshow("crop",crop);
 			//waitKey();
 		}
@@ -79,8 +95,9 @@ void detectFeatures(Mat& img, Mat& clip, std::vector<KeyPoint>& keypoints)
 	FastFeatureDetector detector(minHessian);
 	detector.detect( img, keypoints, clip);
 
-	vector<Rect*> rects;
+	vector<Rect> rects;
 	selectSubPics(img,keypoints,rects);
+
 	return;
 }
 
@@ -100,7 +117,7 @@ int main(int argc , char** argv )
 
 	Mat img_keypoints;
 	std::vector<KeyPoint> keypoints;
-	Mat img = imread( argv[1]);
+	Mat img = imread( argv[1],CV_LOAD_IMAGE_GRAYSCALE);
 	Mat clip = imread( argv[2],CV_LOAD_IMAGE_GRAYSCALE);
 
 	//for(int i=0; i<10; i++) {
