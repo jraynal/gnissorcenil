@@ -3,13 +3,9 @@
 #endif
 
 #include <iostream>
-#include "opencv2/core/core.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/features2d/features2d.hpp"
-#include "opencv2/nonfree/features2d.hpp"
-#include "opencv2/nonfree/nonfree.hpp"
-#include "opencv2/calib3d/calib3d.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/features2d/features2d.hpp>
 #include <sys/time.h>
 using namespace cv;
 using namespace std;
@@ -20,41 +16,59 @@ void readme()
 void issueOpeningVideo()
 { std::cout << "couldn't open video file" << std::endl; }
 
-void eraseUselessKeypoints(vector<KeyPoint> keypoints, vector<KeyPoint>::iterator it, vector<Rect*> rects) {
-	vector<KeyPoint>::iterator tmp = it+1;
+/**
+ * Filtre les points singuliers inutiles car déjà compris dans un autre
+ * rectangle.
+ **/
+bool eraseUselessKeypoints(vector<KeyPoint>& keypoints, uint* index, vector<Rect*>& rects) {
 	if(!rects.empty()) {
 		vector<Rect*>::iterator rit = rects.begin();
 		for(;rit!=rects.end();rit++) {
-			if((*rit)->contains((*it).pt)) {
-				keypoints.erase(tmp);
-				tmp=it+1;	
-				if(tmp==keypoints.end())
-					break;
-			}	
+			if((*rit)->contains(keypoints[(*index)].pt)) {
+			//	vector<KeyPoint>::iterator tmp = keypoints.begin()+(*index);
+			//	cout<<(*tmp).pt<<endl;
+			//	keypoints.erase(tmp);
+			//	cout<<"Skipped point "<<(*index)<<" / "<<keypoints.size()<<endl;
+			//	(*index)--;
+				return true;
+			}
 		}
-	}	
+	}
+	return false;
 }
 
-bool testKeypoint(Mat& img, vector<KeyPoint>::iterator it, int ps) {
-	return (*it).pt.x-ps>0 && (*it).pt.x+ps<img.cols  // Test Rows
-			&& (*it).pt.y-ps>0 && (*it).pt.y+ps<img.rows; // Test Columns
+/**
+ * Test si on peut découper la zone autour du point
+ **/
+bool testKeypoint(Mat& img, KeyPoint& it, int ps) {
+	return it.pt.x-ps>0 && it.pt.x+ps<img.cols  // Test Rows
+			&& it.pt.y-ps>0 && it.pt.y+ps<img.rows; // Test Columns
 }
 
-void selectSubPics(Mat& img, vector<KeyPoint> keypoints, vector<Rect*> rects) {
-	vector<KeyPoint>::iterator it = keypoints.begin();
-	for(; it != keypoints.end();it++) 
-	{
+/**
+ * Selectionne les sous image sur lesquelles effectuer le traitement
+ **/
+void selectSubPics(Mat& img, vector<KeyPoint>& keypoints, vector<Rect*>& rects) {
+	KeyPoint* it;
+	vector<KeyPoint> new_keypoints;
+	for(uint i=0; i<keypoints.size() ; i++) {
+		it=&keypoints[i];
 		// Setup a rectangle to define your region of interest
 		int ps=50; // Picture Size
-		//eraseUselessKeypoints(keypoints,it,rects);	
-		if(testKeypoint(img,it,ps))
-		{
+		if(eraseUselessKeypoints(keypoints,&i,rects))
+			continue;
+		if(testKeypoint(img,(*it),ps)) {
 			cv::Rect MagicCropstem((*it).pt.x - ps/2, (*it).pt.y - ps/2, ps, ps);
 			Mat crop = img(MagicCropstem);
 			rects.push_back(&MagicCropstem);
-			//imshow("crop",crop);
-			//waitKey();
+			new_keypoints.push_back(keypoints[i]);
+//			imshow("crop",crop);
+//			waitKey();
 		}
+	}
+	keypoints.clear();
+	for(uint i=0; i<new_keypoints.size();i++) {
+		keypoints.push_back(new_keypoints[i]);
 	}
 	return;
 }

@@ -1,7 +1,7 @@
 C_DIR=.moc
 OBJECT_DIR=.obj
 TEMPLATE=app
-CONFIG+=qt warn_on relax thread
+CONFIG+=qt warn_on relax thread debug
 
 
 #poss de definir des hearders
