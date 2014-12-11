@@ -6,6 +6,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/features2d/features2d.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <sys/time.h>
 using namespace cv;
 using namespace std;
@@ -60,6 +61,22 @@ void gradientPicHistogram(Mat& simg) {
 	return;
 }
 
+void binariseAndSort(Mat& simg) {
+	Mat dst, hsv;
+	cvtColor(simg,hsv,CV_BGR2HSV);
+	// Met en evidence les éléments les plus blancs de l'image
+	Mat channels[3];
+	split(hsv,channels);
+	threshold(channels[2],dst,190, 255, THRESH_BINARY);
+	Mat tmp1, tmp2;
+	resize(dst,tmp1,Size(200,200));
+	resize(simg,tmp2,Size(200,200));
+	imshow("binarized", tmp1);
+	imshow("real", tmp2);
+	waitKey();
+	return;
+}
+
 /**
  * Selectionne les sous image sur lesquelles effectuer le traitement
  **/
@@ -69,7 +86,7 @@ void selectSubPics(Mat& img, vector<KeyPoint>& keypoints, vector<Rect>& rects) {
 	for(uint i=0; i<keypoints.size() ; i++) {
 		it=&keypoints[i];
 		// Setup a rectangle to define your region of interest
-		int ps=50; // Picture Size
+		int ps=25; // Picture Size
 		if(unselectUselessKeypoints(keypoints,i,rects))
 			continue;
 		if(testKeypoint(img,(*it),ps)) {
@@ -77,7 +94,7 @@ void selectSubPics(Mat& img, vector<KeyPoint>& keypoints, vector<Rect>& rects) {
 			Mat crop = img(MagicCropstem);
 			rects.push_back(MagicCropstem);
 			new_keypoints.push_back(keypoints[i]);
-			gradientPicHistogram(crop);
+			binariseAndSort(crop);
 			//imshow("crop",crop);
 			//waitKey();
 		}
@@ -91,12 +108,14 @@ void selectSubPics(Mat& img, vector<KeyPoint>& keypoints, vector<Rect>& rects) {
 
 void detectFeatures(Mat& img, Mat& clip, std::vector<KeyPoint>& keypoints)
 {
-	int minHessian = 12;
+	int minHessian = 5;
+	Mat grey_clip;
+	cvtColor(clip,grey_clip,CV_BGR2GRAY);
 	FastFeatureDetector detector(minHessian);
-	detector.detect( img, keypoints, clip);
+	detector.detect( img, keypoints, grey_clip);
 
 	vector<Rect> rects;
-	selectSubPics(img,keypoints,rects);
+	selectSubPics(clip,keypoints,rects);
 
 	return;
 }
@@ -117,8 +136,8 @@ int main(int argc , char** argv )
 
 	Mat img_keypoints;
 	std::vector<KeyPoint> keypoints;
-	Mat img = imread( argv[1],CV_LOAD_IMAGE_GRAYSCALE);
-	Mat clip = imread( argv[2],CV_LOAD_IMAGE_GRAYSCALE);
+	Mat img = imread( argv[1]);
+	Mat clip = imread( argv[2]);
 
 	//for(int i=0; i<10; i++) {
 		keypoints.clear();
