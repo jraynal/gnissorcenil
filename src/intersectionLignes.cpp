@@ -41,7 +41,7 @@ bool testKeypoint(Mat& img, KeyPoint& it, int ps) {
 }
 
 void gradientPicHistogram(Mat& simg) {	
-	Mat histo = Mat::zeros(Size(511,511), CV_32S);
+	Mat histo = Mat::zeros(Size(511,511), CV_8UC1);
 	int h=simg.rows, w=simg.cols;
 	double max_hist=0;
 	int tmp=0;
@@ -49,15 +49,14 @@ void gradientPicHistogram(Mat& simg) {
 		for(int j=0; j<h; j++) {
 			int x_grad=simg.at<uchar>(j,((i-1)<0)?i:i-1)-simg.at<uchar>(j,((i+1)>w)?i:i+1);
 			int y_grad=simg.at<uchar>(((j-1)<0)?j:j-1,i)-simg.at<uchar>(((j+1)>w)?j:j+1,i);
-			tmp=(histo.at<int32_t>(256+x_grad,256+y_grad)++);
+			tmp=(histo.at<uchar>(256+x_grad,256+y_grad)++);
 			if(tmp>max_hist) {
 				max_hist=(double)tmp;
 			}
 		}
 	}
-	histo*(255./max_hist);
+	histo*=(255./max_hist);
 	imshow("hist", histo);
-	waitKey();
 	return;
 }
 
@@ -71,6 +70,7 @@ void binariseAndSort(Mat& simg) {
 	Mat tmp1, tmp2;
 	resize(dst,tmp1,Size(200,200));
 	resize(simg,tmp2,Size(200,200));
+	gradientPicHistogram(tmp1);
 	imshow("binarized", tmp1);
 	imshow("real", tmp2);
 	waitKey();
@@ -144,6 +144,8 @@ int main(int argc , char** argv )
 		gettimeofday(&t1,NULL);
 
 		detectFeatures(img,clip,keypoints);
+
+		//gradientPicHistogram(img);
 
 		gettimeofday(&t2,NULL);
 
