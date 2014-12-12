@@ -60,6 +60,25 @@ void gradientPicHistogram(Mat& simg) {
 	return;
 }
 
+void gradientPicHistogram2(Mat& simg) {
+	Mat dx, dy;
+	Sobel(simg,dx,CV_8UC1,0,1,3);
+	Sobel(simg,dy,CV_8UC1,1,0,3);
+	int h=simg.rows, w=simg.cols;
+	Mat edges=Mat::zeros(Size(h,w), CV_8UC1);
+	for(int i=0; i<w; i++)
+	{
+		for(int j=0; j<h; j++) 
+		{
+
+			edges.at<uchar>(i,j) = (uchar) sqrt( pow(dx.at<uchar>(i,j),2) + pow(dy.at<uchar>(i,j),2) );
+
+		}
+	}
+	imshow("hist", edges);
+	return;
+}
+
 void binariseAndSort(Mat& simg) {
 	Mat dst, hsv;
 	cvtColor(simg,hsv,CV_BGR2HSV);
@@ -75,6 +94,7 @@ void binariseAndSort(Mat& simg) {
 	imshow("real", tmp2);
 	waitKey();
 	return;
+
 }
 
 /**
@@ -94,7 +114,8 @@ void selectSubPics(Mat& img, vector<KeyPoint>& keypoints, vector<Rect>& rects) {
 			Mat crop = img(MagicCropstem);
 			rects.push_back(MagicCropstem);
 			new_keypoints.push_back(keypoints[i]);
-			binariseAndSort(crop);
+			gradientPicHistogram2(crop);
+			//binariseAndSort(crop);
 			//imshow("crop",crop);
 			//waitKey();
 		}
