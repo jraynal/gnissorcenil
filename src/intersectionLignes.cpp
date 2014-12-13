@@ -41,7 +41,7 @@ bool testKeypoint(Mat& img, KeyPoint& it, int ps) {
 }
 
 void gradientPicHistogram(Mat& simg) {	
-	Mat histo = Mat::zeros(Size(511,511), CV_8UC1);
+	Mat histo = Mat::zeros(Size(128,128), CV_8UC1);
 	int h=simg.rows, w=simg.cols;
 	double max_hist=0;
 	int tmp=0;
@@ -49,14 +49,19 @@ void gradientPicHistogram(Mat& simg) {
 		for(int j=0; j<h; j++) {
 			int x_grad=simg.at<uchar>(j,((i-1)<0)?i:i-1)-simg.at<uchar>(j,((i+1)>w)?i:i+1);
 			int y_grad=simg.at<uchar>(((j-1)<0)?j:j-1,i)-simg.at<uchar>(((j+1)>w)?j:j+1,i);
-			tmp=(histo.at<uchar>(256+x_grad,256+y_grad)++);
+
+			if(abs(x_grad)<128 && abs(y_grad)<128)
+				tmp=(histo.at<uchar>(64+x_grad/2,64+y_grad/2)++);
 			if(tmp>max_hist) {
 				max_hist=(double)tmp;
 			}
 		}
 	}
 	histo*=(255./max_hist);
-	imshow("hist", histo);
+
+	Mat res_hist;
+	resize(histo, res_hist, Size(256,256));
+	imshow("hist", res_hist);
 	return;
 }
 
@@ -79,15 +84,42 @@ void gradientPicHistogram2(Mat& simg) {
 	return;
 }
 
+void filter_threshold(Mat& input, Mat& output, uchar low, uchar high) {
+	Mat_<uchar>::iterator itIn = input.begin<uchar>(),
+												itOut = output.begin<uchar>(),
+												itInEnd=input.end<uchar>(),
+												itOutEnd=output.end<uchar>();
+	for (;itIn!=itInEnd && itOut!=itOutEnd ; itIn++, itOut++) {
+		if(*itIn>low && *itIn<high) {
+			*itOut=255;
+		}
+		else {
+			*itOut=0;
+		}
+	}
+}
+
+
 void binariseAndSort(Mat& simg) {
-	Mat dst, hsv;
+	Mat hsv;
 	cvtColor(simg,hsv,CV_BGR2HSV);
 	// Met en evidence les éléments les plus blancs de l'image
+	// TODO: Extraction des composantes les plus vertes ==> plus grande proba
+	// d'avoir la ligne.
 	Mat channels[3];
 	split(hsv,channels);
+	Mat dst, dst2(channels[0]), dst3;
+
+
 	threshold(channels[2],dst,190, 255, THRESH_BINARY);
+	filter_threshold(channels[0], dst2, 75, 100);
+	bitwise_and(dst,dst2,dst3);
+
+
+
+	//threshold(channels[0],dst,50, 255, THRESH_BINARY);
 	Mat tmp1, tmp2;
-	resize(dst,tmp1,Size(200,200));
+	resize(dst3,tmp1,Size(200,200));
 	resize(simg,tmp2,Size(200,200));
 	gradientPicHistogram(tmp1);
 	imshow("binarized", tmp1);
@@ -114,8 +146,8 @@ void selectSubPics(Mat& img, vector<KeyPoint>& keypoints, vector<Rect>& rects) {
 			Mat crop = img(MagicCropstem);
 			rects.push_back(MagicCropstem);
 			new_keypoints.push_back(keypoints[i]);
-			gradientPicHistogram2(crop);
-			//binariseAndSort(crop);
+			//gradientPicHistogram2(crop);
+			binariseAndSort(crop);
 			//imshow("crop",crop);
 			//waitKey();
 		}
