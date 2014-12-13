@@ -61,22 +61,77 @@ void gradientPicHistogram(Mat& simg) {
 	return;
 }
 
-void gradientPicHistogram2(Mat& simg) {
+void displayHisto(Mat& hist)
+{
+
+	// Draw the histograms 
+    int hist_w = 400; int hist_h = 200;
+    Mat histImage( hist_h, hist_w, CV_8UC3, Scalar( 0,0,0) );
+    int bin_w = cvRound( (double) hist_w/256);
+    /// Normalize the result to [ 0, histImage.rows ]
+    normalize(hist, hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
+	/// Draw for each channel
+	for( int i = 1; i < 256; i++ )
+  	{
+      line( histImage, Point( bin_w*(i-1), hist_h - cvRound(hist.at<float>(i-1)) ) ,
+                       Point( bin_w*(i), hist_h - cvRound(hist.at<float>(i)) ),
+                   Scalar( 255, 0, 0), 2, 8, 0  );
+  	} 	
+    /// Display
+    namedWindow("Histogramme des angles", CV_WINDOW_AUTOSIZE );
+    imshow("Histogramme des angles", histImage );
+}
+
+
+// calcule et affiche l'histogramme des orientation du gradient
+int gradientPicHistogram2(Mat& simg) {
 	Mat dx, dy;
 	Sobel(simg,dx,CV_8UC1,0,1,3);
 	Sobel(simg,dy,CV_8UC1,1,0,3);
 	int h=simg.rows, w=simg.cols;
-	Mat edges=Mat::zeros(Size(h,w), CV_8UC1);
+	Mat edges = Mat::zeros(Size(h,w), CV_8UC1);
 	for(int i=0; i<w; i++)
 	{
 		for(int j=0; j<h; j++) 
 		{
-
-			edges.at<uchar>(i,j) = (uchar) sqrt( pow(dx.at<uchar>(i,j),2) + pow(dy.at<uchar>(i,j),2) );
-
+			edges.at<uchar>(i,j) = (uchar) sqrt( pow(dx.at<uchar>(i,j),2) + pow(dy.at<uchar>(i,j),2) );	
 		}
 	}
-	imshow("hist", edges);
+	Mat resized, resized2;
+	resize(edges,resized,Size(200,200));
+	//resize(simg,resized2,Size(200,200));
+
+   	/// Establish the number of bins
+  	int histSize = 64;
+  	/// Set the ranges
+  	float range[] = { 0, 256 } ;
+  	const float* histRange = { range };
+  	Mat hist;
+  	/// Compute the histograms:
+ 	calcHist(&edges, 1, 0, Mat(), hist, 1, &histSize, &histRange, true, false );
+ 	uint max=1;
+ 	Mat_<uint>::iterator it = hist.begin<uint>(),
+ 						  itEnd =hist.end<uint>();
+ 	*it=0;
+ 	cout<<"New pic"<<endl;
+ 	for(;it!=itEnd; it++)
+ 	{
+ 		cout<<*it;
+ 		if(*it > max)
+ 		{
+ 			max = *it;
+ 		}
+ 	}
+ 	cout<<endl;
+ 	hist*=(255./(double)max);
+ 	
+ 	
+
+ 	// display histogram
+ 	displayHisto(hist);
+
+	//imshow("angles", resized2);
+	imshow("angles resized", resized);
 	return;
 }
 
@@ -88,6 +143,11 @@ void binariseAndSort(Mat& simg) {
 	split(hsv,channels);
 	threshold(channels[2],dst,190, 255, THRESH_BINARY);
 	Mat tmp1, tmp2;
+
+
+	gradientPicHistogram2(dst);
+	
+
 	resize(dst,tmp1,Size(200,200));
 	resize(simg,tmp2,Size(200,200));
 	imshow("binarized", tmp1);
@@ -96,6 +156,7 @@ void binariseAndSort(Mat& simg) {
 	return;
 
 }
+
 
 /**
  * Selectionne les sous image sur lesquelles effectuer le traitement
@@ -114,14 +175,14 @@ void selectSubPics(Mat& img, vector<KeyPoint>& keypoints, vector<Rect>& rects) {
 			Mat crop = img(MagicCropstem);
 			rects.push_back(MagicCropstem);
 			new_keypoints.push_back(keypoints[i]);
-			gradientPicHistogram2(crop);
-			//binariseAndSort(crop);
+			binariseAndSort(crop);
 			//imshow("crop",crop);
 			//waitKey();
 		}
 	}
 	keypoints.clear();
-	for(uint i=0; i<new_keypoints.size();i++) {
+	for(uint i=0; i<new_keypoints.size();i++) 
+	{
 		keypoints.push_back(new_keypoints[i]);
 	}
 	return;
@@ -134,7 +195,6 @@ void detectFeatures(Mat& img, Mat& clip, std::vector<KeyPoint>& keypoints)
 	cvtColor(clip,grey_clip,CV_BGR2GRAY);
 	FastFeatureDetector detector(minHessian);
 	detector.detect( img, keypoints, grey_clip);
-
 	vector<Rect> rects;
 	selectSubPics(clip,keypoints,rects);
 
@@ -148,12 +208,6 @@ int main(int argc , char** argv )
 		return -1;
 	}
 	struct timeval t1, t2;
-	/* VideoCapture cap((string)argv[1]);
-		 if(!cap.isOpened())
-		 {
-		 issueOpeningVideo();
-		 return -1;
-		 }*/
 
 	Mat img_keypoints;
 	std::vector<KeyPoint> keypoints;
