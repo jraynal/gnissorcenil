@@ -11,6 +11,13 @@
 using namespace cv;
 using namespace std;
 
+/**
+ * Global Variables
+ **/
+
+vect<Rect> global_rects;
+
+
 void readme()
 { std::cout << " Usage: ./intersectionLignes <img> <img clip> " << std::endl; }
 
@@ -40,6 +47,9 @@ bool testKeypoint(Mat& img, KeyPoint& it, int ps) {
 			&& it.pt.y-ps>0 && it.pt.y+ps<img.rows; // Test Columns
 }
 
+/**
+ * Draw gradient angle histogram
+ **/
 void gradientPicHistogram(Mat& simg) {	
 	Mat histo = Mat::zeros(Size(128,128), CV_8UC1);
 	int h=simg.rows, w=simg.cols;
@@ -65,30 +75,33 @@ void gradientPicHistogram(Mat& simg) {
 	return;
 }
 
+/**
+ * Print an histogram with bands
+ **/
 void displayHisto(Mat& hist)
 {
 
 	// Draw the histograms 
-    int hist_w = 400; int hist_h = 200;
-    Mat histImage( hist_h, hist_w, CV_8UC3, Scalar( 0,0,0) );
-    int bin_w = cvRound( (double) hist_w/256);
-    /// Normalize the result to [ 0, histImage.rows ]
-    normalize(hist, hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
+	int hist_w = 400; int hist_h = 200;
+	Mat histImage( hist_h, hist_w, CV_8UC3, Scalar( 0,0,0) );
+	int bin_w = cvRound( (double) hist_w/256);
+	/// Normalize the result to [ 0, histImage.rows ]
+	normalize(hist, hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
 	/// Draw for each channel
 	for( int i = 1; i < 256; i++ )
-  	{
-      line( histImage, Point( bin_w*(i-1), hist_h - cvRound(hist.at<float>(i-1)) ) ,
-                       Point( bin_w*(i), hist_h - cvRound(hist.at<float>(i)) ),
-                   Scalar( 255, 0, 0), 2, 8, 0  );
-  	} 	
-    /// Display
-    //namedWindow("Histogramme des angles", CV_WINDOW_AUTOSIZE );
-    //imshow("Histogramme des angles", histImage );
-		//imwrite("histogramme.png", histImage);
+	{
+		line( histImage, Point( bin_w*(i-1), hist_h - cvRound(hist.at<float>(i-1)) ) ,
+				Point( bin_w*(i), hist_h - cvRound(hist.at<float>(i)) ),
+				Scalar( 255, 0, 0), 2, 8, 0  );
+	} 	
+	/// Display
+	//imshow("Histogramme des angles", histImage );
+	//imwrite("histogramme.png", histImage);
 }
 
-
-// calcule et affiche l'histogramme des orientation du gradient
+/**
+ * calcule et affiche l'histogramme des orientation du gradient
+ **/
 void gradientPicHistogram2(Mat& simg) {
 	Mat dx, dy;
 	Sobel(simg,dx,CV_8UC1,0,1,3);
@@ -106,40 +119,42 @@ void gradientPicHistogram2(Mat& simg) {
 	//resize(edges,resized,Size(200,200));
 	//resize(simg,resized2,Size(200,200));
 
-   	/// Establish the number of bins
-  	int histSize = 64;
-  	/// Set the ranges
-  	float range[] = { 0, 256 } ;
-  	const float* histRange = { range };
-  	Mat hist;
-  	/// Compute the histograms:
- 	calcHist(&edges, 1, 0, Mat(), hist, 1, &histSize, &histRange, true, false );
- 	uint max=1;
- 	Mat_<uint>::iterator it = hist.begin<uint>(),
- 						  itEnd =hist.end<uint>();
- 	*it=0;
- 	cout<<"New pic"<<endl;
- 	for(;it!=itEnd; it++)
- 	{
- 		cout<<*it;
- 		if(*it > max)
- 		{
- 			max = *it;
- 		}
- 	}
- 	cout<<endl;
- 	hist*=(255./(double)max);
- 	
- 	
+	/// Establish the number of bins
+	int histSize = 64;
+	/// Set the ranges
+	float range[] = { 0, 256 } ;
+	const float* histRange = { range };
+	Mat hist;
+	/// Compute the histograms:
+	calcHist(&edges, 1, 0, Mat(), hist, 1, &histSize, &histRange, true, false );
+	uint max=1;
+	Mat_<uint>::iterator it = hist.begin<uint>(),
+		itEnd =hist.end<uint>();
+	*it=0;
+	cout<<"New pic"<<endl;
+	for(;it!=itEnd; it++)
+	{
+		cout<<*it;
+		if(*it > max)
+		{
+			max = *it;
+		}
+	}
+	cout<<endl;
+	hist*=(255./(double)max);
 
- 	// display histogram
- 	displayHisto(hist);
+	// display histogram
+	displayHisto(hist);
 
 	// imshow("angles", resized2);
 	//imshow("angles resized", resized);
 	return;
 }
 
+
+/**
+ * Filtre passe bande
+ **/
 void filter_threshold(Mat& input, Mat& output, uchar low, uchar high) {
 	Mat_<uchar>::iterator itIn = input.begin<uchar>(),
 												itOut = output.begin<uchar>(),
@@ -155,7 +170,9 @@ void filter_threshold(Mat& input, Mat& output, uchar low, uchar high) {
 	}
 }
 
-
+/**
+ * Binarisation d'une image de manière à isoler le blanc et diminuer le bruit
+ **/
 void binariseAndSort(Mat& simg) {
 	Mat hsv;
 	cvtColor(simg,hsv,CV_BGR2HSV);
@@ -183,7 +200,9 @@ void binariseAndSort(Mat& simg) {
 	return;
 }
 
-
+/**
+ * Tentative de detection de croisement par détection de contour
+ **/
 void contourDetectionTrial(Mat& simg) {
 	Mat dst;
 	Canny(simg, dst, 100., 300., 3);
@@ -224,6 +243,9 @@ void selectSubPics(Mat& img, vector<KeyPoint>& keypoints, vector<Rect>& rects) {
 	return;
 }
 
+/**
+ * Pipeline begin
+ **/
 void detectFeatures(Mat& img, Mat& clip, std::vector<KeyPoint>& keypoints)
 {
 	int minHessian = 5;
