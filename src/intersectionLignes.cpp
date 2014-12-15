@@ -159,8 +159,7 @@ void selectSubPics(Mat& img, vector<KeyPoint>& keypoints) {
 				// Ne garde pas le point s'il n'y a pas de croisement (potentiel)
 				if(binariseAndSort(crop, intersection_point)) {
 					// Modifie la position du point singulier en celle de l'intersection
-					//keypoints[i].x=intersection_point.x;
-					//keypoints[i].y=intersection_point.y;
+					keypoints[i].pt=intersection_point;
 					new_keypoints.push_back(keypoints[i]);
 				}
 			}
