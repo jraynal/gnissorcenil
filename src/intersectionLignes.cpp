@@ -61,13 +61,15 @@ void filter_threshold(Mat& input, Mat& output, uchar low, uchar high) {
  * Retourne le point d'intersection de l'image coupee (ou sous image)
  * Renvoie NULL si aucune intersection n'est trouvée
  **/
-Point* intersection(Mat subpic, vector<Vec4i> lines){
+bool intersection(Mat subpic, vector<Vec4i> lines, Point& new_point){
+	(void) subpic;
+	(void) lines;
 	for (size_t i = 0; i < lines.size()-1; i++) {
-		Vec4i l1 = lines[i];
+		//Vec4i l1 = lines[i];
 		//Calcul du vecteur directeur
 
 		for (size_t j = i+1; j < lines.size(); j++) {
-			Vec4i l2 = lines[j];
+			//Vec4i l2 = lines[j];
 
 			//Calcul du vecteur directeur
 
@@ -75,7 +77,7 @@ Point* intersection(Mat subpic, vector<Vec4i> lines){
 
 		}
 	} 
-	return NULL; 
+	return false; 
 }
 
 
@@ -83,7 +85,7 @@ Point* intersection(Mat subpic, vector<Vec4i> lines){
  * Detecte les lignes dans l'image coupee
  * puis observe les lignes pour en extraire une intersection.
  **/
-Point* detectIntersection(Mat subpic) {
+bool detectIntersection(Mat subpic, Point& new_point) {
 	vector<Vec4i> lines;
 	Mat cdst;
 	cvtColor(subpic, cdst, CV_GRAY2BGR);
@@ -98,9 +100,9 @@ Point* detectIntersection(Mat subpic) {
 	imshow("lines", cdst);
 
 	if(lines.size() >1)
-		return intersection(cdst, lines);
+		return intersection(cdst, lines, new_point);
 	else
-		return NULL;
+		return false;
 }
 
 /**
@@ -121,7 +123,7 @@ bool binariseAndSort(Mat& simg, Point& new_point) {
 	bitwise_and(white_selection, green_selection, binar_result);
 	
 	// Recherche le croisement
-	if((new_point=*(detectIntersection(binar_result)))==NULL)
+	if(detectIntersection(binar_result, new_point))
 			return false;
 	else
 			return true;
@@ -157,8 +159,8 @@ void selectSubPics(Mat& img, vector<KeyPoint>& keypoints) {
 				// Ne garde pas le point s'il n'y a pas de croisement (potentiel)
 				if(binariseAndSort(crop, intersection_point)) {
 					// Modifie la position du point singulier en celle de l'intersection
-					keypoints[i].x=intersection_point.x;
-					keypoints[i].y=intersection_point.y;
+					//keypoints[i].x=intersection_point.x;
+					//keypoints[i].y=intersection_point.y;
 					new_keypoints.push_back(keypoints[i]);
 				}
 			}
