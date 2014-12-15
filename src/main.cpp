@@ -17,7 +17,7 @@ Point* intersection(Point p1, Point p2, Point p3, Point p4) {
  
   float d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
   // If d is zero, there is no intersection
-  if (d == 0) return NULL;
+  if (d < 0.001) return NULL;
  
   // Get the x and y
   float pre = (x1*y2 - y1*x2), post = (x3*y4 - y3*x4);
@@ -62,7 +62,11 @@ int main(int argc, char** argv) {
   // Line detection
   Canny(image, dst, 50, 200, 3);
   cvtColor(dst, cdst, CV_GRAY2BGR);
+  imshow("detected edges", cdst);
+  imwrite("edges.jpg",cdst);
+
   vector<Vec4i> lines;
+  vector<Vec4i> new_lines;
   HoughLinesP(dst, lines, 1, CV_PI/180, 10, 50, 10 );
 
   // Benchmark : ending time
@@ -75,7 +79,8 @@ int main(int argc, char** argv) {
     Vec4i l = lines[i];
     line(cdst, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,255), 2, CV_AA);
   }
-  //imshow("detected lines", cdst);
+  imshow("detected lines", cdst);
+  imwrite("lines.jpg",cdst);
 
   Mat image_hsv;
   cvtColor(image, image_hsv, CV_RGB2HSV);
@@ -95,6 +100,7 @@ int main(int argc, char** argv) {
     circle(cdst2, center, 10, Scalar(0, 0, 255), 1);
     //imshow("tmp", cdst2);
 
+
     // Compute the local (ROI) histogram
     int roiSize = 10;
     MatND hist;
@@ -103,7 +109,7 @@ int main(int argc, char** argv) {
     float range[] = {0, 180};
     const float* ranges[] = {range};
     Mat image_hsv_roi(image_hsv, Rect(center.x - roiSize, center.y - roiSize, roiSize * 2, roiSize * 2));
-    // imshow("roi", image_hsv_roi);
+    imshow("roi", image_hsv_roi);
     calcHist(&image_hsv_roi, 1, channels, Mat(), hist, 1, histSize, ranges, true, false);
 
     // Calculate the highest value
@@ -134,30 +140,33 @@ int main(int argc, char** argv) {
 
     // Decide wether this line is to be selected
     if (tot2 > tot * 0.9) {
-      //cout << "GOOD";
-
       // Draw this line on the final image
       line(final, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(rng.uniform(0,255), rng.uniform(0, 255), rng.uniform(0, 255)), 2, CV_AA);
-    }
-    else {
-      lines.erase(lines.begin()+i-1);
+      new_lines.push_back(lines[i]);
     }
   }
 
-  for (size_t i = 0; i < lines.size(); i++) {
-    for (size_t j = i; j < lines.size(); j++) {
-      Point* p=intersection(Point(lines[i][0],lines[i][1]), Point(lines[i][2],lines[i][3]),
-			    Point(lines[j][0],lines[j][1]), Point(lines[i][2],lines[i][3]));
-      if(p!=NULL) {
-	cout << p->x << endl;
-	cout << p->y << endl;
+  cout<<"LOL"<<endl;
 
-	//Showing in red the point supposed to be on an intersection
-	cv::Vec3b data = final.at<cv::Vec3b>(p->x,p->y);
+  if(new_lines.size()>1){
+    for (size_t i = 0; i < new_lines.size()-1; i++) {
+      for (size_t j = i+1; j < new_lines.size(); j++) {
+	Point* p=intersection(Point(lines[i][0],lines[i][1]), Point(lines[i][2],lines[i][3]),
+			      Point(lines[j][0],lines[j][1]), Point(lines[i][2],lines[i][3]));
+	if(p!=NULL) {
+	  cout << p->x << endl;
+	  cout << p->y << endl;
 
-      data[0] = 0;
-      data[1] = 0;
-      data[2] = 255;
+	  if(p->x<0 || p->x>final.cols || p->y<0 || p->y>final.rows)
+	    continue;
+
+	  //Showing in red the point supposed to be on an intersection
+	  for(int y1=0; y1<9; y1++){
+	    for(int y2=0; y2<9; y2++){
+	      final.at<cv::Vec3b>(p->x-4+y1,p->y-4+y2)={0,0,255};
+	    }
+	  }	
+	}
       }
     }
   }
