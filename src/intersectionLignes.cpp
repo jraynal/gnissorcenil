@@ -88,7 +88,7 @@ void displayHisto(Mat& hist)
 
 
 // calcule et affiche l'histogramme des orientation du gradient
-int gradientPicHistogram2(Mat& simg) {
+void gradientPicHistogram2(Mat& simg) {
 	Mat dx, dy;
 	Sobel(simg,dx,CV_8UC1,0,1,3);
 	Sobel(simg,dy,CV_8UC1,1,0,3);
@@ -170,21 +170,26 @@ void binariseAndSort(Mat& simg) {
 	filter_threshold(channels[0], dst2, 75, 100);
 	bitwise_and(dst,dst2,dst3);
 
-
-
-	//threshold(channels[0],dst,50, 255, THRESH_BINARY);
+	gradientPicHistogram2(dst3);
+	
 	Mat tmp1, tmp2;
 	resize(dst3,tmp1,Size(200,200));
-
-	//gradientPicHistogram2(dst);
-	
 	resize(simg,tmp2,Size(200,200));
 	gradientPicHistogram(tmp1);
 	imshow("binarized", tmp1);
 	imshow("real", tmp2);
 	waitKey();
 	return;
+}
 
+
+void contourDetectionTrial(Mat& simg) {
+	Mat dst;
+	Canny(simg, dst, 100., 300., 3);
+	imshow("Image", simg);
+	imshow("Edges", dst);
+	waitKey();
+	return;
 }
 
 
@@ -209,6 +214,7 @@ void selectSubPics(Mat& img, vector<KeyPoint>& keypoints, vector<Rect>& rects) {
 			binariseAndSort(crop);
 			//imshow("crop",crop);
 			//waitKey();
+			
 		}
 	}
 	keypoints.clear();
