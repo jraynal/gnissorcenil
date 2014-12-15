@@ -210,23 +210,29 @@ void selectSubPics(Mat& img, vector<KeyPoint>& keypoints) {
     //Construit un rectangle autour de la zone d'interet
     // Ne traite pas les points présent dans les rectangles déjà retenus
     if(!unselectUselessKeypoints(keypoints,i,rects)) {
-      // Vérifie que la zone ne sort pas de l'image
-      if(testKeypoint(img,(*it))) {
-	// Découpe la zone d'intéret
-	cv::Rect MagicCropstem((*it).pt.x - PS/2, (*it).pt.y - PS/2, PS, PS);
-	Mat crop = img(MagicCropstem);
-				
-	// Sauvegarde le rectangle
-	rects.push_back(MagicCropstem);
-				
-	Point intersection_point(keypoints[i].pt.x-PS/2,keypoints[i].pt.y-PS/2);
-	// Ne garde pas le point s'il n'y a pas de croisement (potentiel)
-	if(binariseAndSort(crop, intersection_point)) {
-	  // Modifie la position du point singulier en celle de l'intersection
-	  keypoints[i].pt=intersection_point;
-	  new_keypoints.push_back(keypoints[i]);
+			// Vérifie que la zone ne sort pas de l'image
+			if(testKeypoint(img,(*it))) {
+				// Découpe la zone d'intéret
+				cv::Rect MagicCropstem((*it).pt.x - PS/2, (*it).pt.y - PS/2, PS, PS);
+				Mat crop = img(MagicCropstem);
+
+				// Sauvegarde le rectangle
+				rects.push_back(MagicCropstem);
+
+				Point intersection_point(keypoints[i].pt.x-PS/2,keypoints[i].pt.y-PS/2);
+				// Ne garde pas le point s'il n'y a pas de croisement (potentiel)
+				if(binariseAndSort(crop, intersection_point)) {
+					// Modifie la position du point singulier en celle de l'intersection
+					keypoints[i].pt=intersection_point;
+				}
+			}
+		}
 	}
-  return;
+	keypoints.clear();
+	for(int i=0; i<new_keypoints.size();i++){
+		new_keypoints.push_back(keypoints[i]);
+	}
+	return;
 }
 
 /**
