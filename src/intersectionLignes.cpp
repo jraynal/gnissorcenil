@@ -13,10 +13,14 @@ using namespace cv;
 using namespace std;
 
 //definition de l'angle minimal entre deux lignes pour declarer une intersection, en radians
-#define min_angle 0.27
+#define MIN_ANGLE 0.25
 
 // Picture Size (cropped rectangle)
-#define ps 25
+#define PS 25
+
+int global_width = 0;
+int global_height = 0;
+
 
 
 void readme()
@@ -44,8 +48,8 @@ bool unselectUselessKeypoints(vector<KeyPoint>& keypoints, uint index, vector<Re
  * Test si on peut découper la zone autour du point
  **/
 bool testKeypoint(Mat& img, KeyPoint& it) {
-  return it.pt.x-ps>0 && it.pt.x+ps<img.cols  // Test Rows
-				    && it.pt.y-ps>0 && it.pt.y+ps<img.rows; // Test Columns
+  return it.pt.x-PS>0 && it.pt.x+PS<img.cols  // Test Rows
+				    && it.pt.y-PS>0 && it.pt.y+PS<img.rows; // Test Columns
 }
 
 /**
@@ -81,13 +85,15 @@ bool computeIntersection(Point p1, Point p2, Point p3, Point p4, Point& new_poin
   float x = ( pre * (x3 - x4) - (x1 - x2) * post ) / d;
   float y = ( pre * (y3 - y4) - (y1 - y2) * post ) / d;
  
-  // Check if the x and y coordinates are within the image limits
-  if ( x < 0 || x > ps-1 ) return false;
-  if ( y < 0 || y > ps-1 ) return false;
- 
   // Return the point of intersection
   new_point.x += x;
-  new_point.x += y;
+  new_point.y += y;
+
+  // Check if the x and y coordinates are within the image limits
+  if ( new_point.x < 0 || new_point.x > global_width-1 ) return false;
+  if ( new_point.y < 0 || new_point.y > global_height-1 ) return false;
+
+  return true;
 }
 
 /**
@@ -97,6 +103,10 @@ bool computeIntersection(Point p1, Point p2, Point p3, Point p4, Point& new_poin
 bool intersection(Mat subpic, vector<Vec4i> lines, Point& new_point){
   (void) subpic;
   (void) lines;
+  int i_max=-1;
+  int j_max=-1;
+  float max_angle=0.;
+
   for (size_t i = 0; i < lines.size()-1; i++) {
     Vec4i l1 = lines[i];
 
@@ -118,17 +128,21 @@ bool intersection(Mat subpic, vector<Vec4i> lines, Point& new_point){
 			  sqrt(vec2_x*vec2_x+vec2_y*vec2_y)));
       
       //Si angle trop petit, j'aimerais retirer la droite du lot
-      if(angle<min_angle)
-	{
-	  continue;
-	}
-      else {
-	if(computeIntersection(Point(lines[i][0],lines[i][1]), Point(lines[i][2],lines[i][3]),
-			       Point(lines[j][0],lines[j][1]), Point(lines[j][2],lines[j][3]), new_point))
-	  return true;
+      if(angle>MIN_ANGLE && angle>max_angle){
+	max_angle=angle;
+	i_max=i;
+	j_max=j;
       }
-    } 
-  } 
+    }
+  }
+  
+  if(i_max!=-1) {
+    if(computeIntersection(Point(lines[i_max][0],lines[i_max][1]), Point(lines[i_max][2],lines[i_max][3]),
+			   Point(lines[j_max][0],lines[j_max][1]), Point(lines[j_max][2],lines[j_max][3]),
+			   new_point))
+      return true;
+  }
+  
   return false; 
 }
 
@@ -193,31 +207,24 @@ void selectSubPics(Mat& img, vector<KeyPoint>& keypoints) {
   for(uint i=0; i<keypoints.size() ; i++) {
     it=&keypoints[i];
 
-    // Setup a rectangle to define your region of interest
+    //Construit un rectangle autour de la zone d'interet
     // Ne traite pas les points présent dans les rectangles déjà retenus
     if(!unselectUselessKeypoints(keypoints,i,rects)) {
       // Vérifie que la zone ne sort pas de l'image
       if(testKeypoint(img,(*it))) {
 	// Découpe la zone d'intéret
-	cv::Rect MagicCropstem((*it).pt.x - ps/2, (*it).pt.y - ps/2, ps, ps);
+	cv::Rect MagicCropstem((*it).pt.x - PS/2, (*it).pt.y - PS/2, PS, PS);
 	Mat crop = img(MagicCropstem);
 				
 	// Sauvegarde le rectangle
 	rects.push_back(MagicCropstem);
 				
-				Point intersection_point;
-				// Ne garde pas le point s'il n'y a pas de croisement (potentiel)
-				if(binariseAndSort(crop, intersection_point)) {
-					// Modifie la position du point singulier en celle de l'intersection
-					keypoints[i].pt=intersection_point;
-					new_keypoints.push_back(keypoints[i]);
-				}
-			}
-		}
-	}
-	keypoints.clear();
-	for(uint i=0; i<new_keypoints.size();i++) {
-		keypoints.push_back(new_keypoints[i]);
+	Point intersection_point(keypoints[i].pt.x-PS/2,keypoints[i].pt.y-PS/2);
+	// Ne garde pas le point s'il n'y a pas de croisement (potentiel)
+	if(binariseAndSort(crop, intersection_point)) {
+	  // Modifie la position du point singulier en celle de l'intersection
+	  keypoints[i].pt=intersection_point;
+	  new_keypoints.push_back(keypoints[i]);
 	}
   return;
 }
@@ -253,6 +260,9 @@ int main(int argc , char** argv )
   std::vector<KeyPoint> keypoints;
   Mat img = imread( argv[1]);
   Mat clip = imread( argv[2]);
+
+  global_width=img.cols;
+  global_height=img.rows;
 
   keypoints.clear();
   gettimeofday(&t1,NULL);

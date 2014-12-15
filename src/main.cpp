@@ -152,7 +152,7 @@ int main(int argc, char** argv) {
     for (size_t i = 0; i < new_lines.size()-1; i++) {
       for (size_t j = i+1; j < new_lines.size(); j++) {
 	Point* p=intersection(Point(lines[i][0],lines[i][1]), Point(lines[i][2],lines[i][3]),
-			      Point(lines[j][0],lines[j][1]), Point(lines[i][2],lines[i][3]));
+			      Point(lines[j][0],lines[j][1]), Point(lines[j][2],lines[j][3]));
 	if(p!=NULL) {
 	  cout << p->x << endl;
 	  cout << p->y << endl;
