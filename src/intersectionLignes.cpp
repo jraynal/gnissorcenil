@@ -59,9 +59,9 @@ void gradientPicHistogram(Mat& simg) {
 	}
 	histo*=(255./max_hist);
 
-	Mat res_hist;
-	resize(histo, res_hist, Size(256,256));
-	imshow("hist", res_hist);
+	//Mat res_hist;
+	//resize(histo, res_hist, Size(256,256));
+	//imshow("hist", res_hist);
 	return;
 }
 
@@ -82,8 +82,9 @@ void displayHisto(Mat& hist)
                    Scalar( 255, 0, 0), 2, 8, 0  );
   	} 	
     /// Display
-    namedWindow("Histogramme des angles", CV_WINDOW_AUTOSIZE );
-    imshow("Histogramme des angles", histImage );
+    //namedWindow("Histogramme des angles", CV_WINDOW_AUTOSIZE );
+    //imshow("Histogramme des angles", histImage );
+		//imwrite("histogramme.png", histImage);
 }
 
 
@@ -102,7 +103,7 @@ void gradientPicHistogram2(Mat& simg) {
 		}
 	}
 	Mat resized, resized2;
-	resize(edges,resized,Size(200,200));
+	//resize(edges,resized,Size(200,200));
 	//resize(simg,resized2,Size(200,200));
 
    	/// Establish the number of bins
@@ -134,8 +135,8 @@ void gradientPicHistogram2(Mat& simg) {
  	// display histogram
  	displayHisto(hist);
 
-	//imshow("angles", resized2);
-	imshow("angles resized", resized);
+	// imshow("angles", resized2);
+	//imshow("angles resized", resized);
 	return;
 }
 
@@ -159,26 +160,26 @@ void binariseAndSort(Mat& simg) {
 	Mat hsv;
 	cvtColor(simg,hsv,CV_BGR2HSV);
 	// Met en evidence les éléments les plus blancs de l'image
-	// TODO: Extraction des composantes les plus vertes ==> plus grande proba
-	// d'avoir la ligne.
 	Mat channels[3];
 	split(hsv,channels);
 	Mat dst, dst2(channels[0]), dst3;
 
 
 	threshold(channels[2],dst,190, 255, THRESH_BINARY);
-	filter_threshold(channels[0], dst2, 75, 100);
+	filter_threshold(channels[0], dst2, 75, 150);
 	bitwise_and(dst,dst2,dst3);
 
 	gradientPicHistogram2(dst3);
 	
-	Mat tmp1, tmp2;
-	resize(dst3,tmp1,Size(200,200));
-	resize(simg,tmp2,Size(200,200));
-	gradientPicHistogram(tmp1);
-	imshow("binarized", tmp1);
-	imshow("real", tmp2);
-	waitKey();
+	//Mat tmp1, tmp2;
+	//resize(dst3,tmp1,Size(200,200));
+	//resize(simg,tmp2,Size(200,200));
+	//gradientPicHistogram(tmp1);
+	//imwrite("binarized.png",tmp1);
+	//imwrite("real.png",tmp2);
+	//imshow("binarized", tmp1);
+	//imshow("real", tmp2);
+	//waitKey();
 	return;
 }
 
@@ -186,9 +187,9 @@ void binariseAndSort(Mat& simg) {
 void contourDetectionTrial(Mat& simg) {
 	Mat dst;
 	Canny(simg, dst, 100., 300., 3);
-	imshow("Image", simg);
-	imshow("Edges", dst);
-	waitKey();
+	//imshow("Image", simg);
+	//imshow("Edges", dst);
+	//waitKey();
 	return;
 }
 
@@ -213,13 +214,11 @@ void selectSubPics(Mat& img, vector<KeyPoint>& keypoints, vector<Rect>& rects) {
 			//gradientPicHistogram2(crop);
 			binariseAndSort(crop);
 			//imshow("crop",crop);
-			//waitKey();
-			
+			//waitKey();	
 		}
 	}
 	keypoints.clear();
-	for(uint i=0; i<new_keypoints.size();i++) 
-	{
+	for(uint i=0; i<new_keypoints.size();i++) {
 		keypoints.push_back(new_keypoints[i]);
 	}
 	return;
@@ -265,8 +264,9 @@ int main(int argc , char** argv )
 	//}
 
 	drawKeypoints( img, keypoints, img_keypoints, Scalar::all(-1), DrawMatchesFlags::DEFAULT );
-	imshow("frame",img_keypoints);
-	waitKey();
+	//imwrite("frame.png", img_keypoints);
+	//imshow("frame",img_keypoints);
+	//waitKey();
 
 	return 0;
 }
