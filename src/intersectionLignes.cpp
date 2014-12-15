@@ -11,13 +11,6 @@
 using namespace cv;
 using namespace std;
 
-/**
- * Global Variables
- **/
-
-vect<Rect> global_rects;
-
-
 void readme()
 { std::cout << " Usage: ./intersectionLignes <img> <img clip> " << std::endl; }
 
@@ -29,22 +22,22 @@ void issueOpeningVideo()
  * rectangle.
  **/
 bool unselectUselessKeypoints(vector<KeyPoint>& keypoints, uint index, vector<Rect>& rects) {
-	if(!rects.empty()) {
-		for(uint i=0;i<rects.size();i++) {
-			if(rects[i].contains(keypoints[index].pt)) {
-				return true;
-			}
-		}
-	}
-	return false;
+  if(!rects.empty()) {
+    for(uint i=0;i<rects.size();i++) {
+      if(rects[i].contains(keypoints[index].pt)) {
+	return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
  * Test si on peut découper la zone autour du point
  **/
 bool testKeypoint(Mat& img, KeyPoint& it, int ps) {
-	return it.pt.x-ps>0 && it.pt.x+ps<img.cols  // Test Rows
-			&& it.pt.y-ps>0 && it.pt.y+ps<img.rows; // Test Columns
+  return it.pt.x-ps>0 && it.pt.x+ps<img.cols  // Test Rows
+				    && it.pt.y-ps>0 && it.pt.y+ps<img.rows; // Test Columns
 }
 
 /**
@@ -63,6 +56,51 @@ void filter_threshold(Mat& input, Mat& output, uchar low, uchar high) {
 			*itOut=0;
 		}
 	}
+}
+/**
+ * Retourne le point d'intersection de l'image coupee (ou sous image)
+ * Renvoie NULL si aucune intersection n'est trouvée
+ **/
+Point* intersection(Mat subpic, vector<Vec4i> lines){
+	for (size_t i = 0; i < lines.size()-1; i++) {
+		Vec4i l1 = lines[i];
+		//Calcul du vecteur directeur
+
+		for (size_t j = i+1; j < lines.size(); j++) {
+			Vec4i l2 = lines[j];
+
+			//Calcul du vecteur directeur
+
+			//Estimation de la distance entre vecteurs: s'ils sont tres similaires, on arrete la.
+
+		}
+	} 
+	return NULL; 
+}
+
+
+/**
+ * Detecte les lignes dans l'image coupee
+ * puis observe les lignes pour en extraire une intersection.
+ **/
+Point* detectIntersection(Mat subpic) {
+	vector<Vec4i> lines;
+	Mat cdst;
+	cvtColor(subpic, cdst, CV_GRAY2BGR);
+
+	HoughLinesP(subpic, lines, 1, CV_PI/180, 10, 9, 3 );
+
+	for (size_t i = 0; i < lines.size(); i++) {
+		Vec4i l = lines[i];
+		line(cdst, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,255), 2, CV_AA);
+	}
+
+	imshow("lines", cdst);
+
+	if(lines.size() >1)
+		return intersection(cdst, lines);
+	else
+		return NULL;
 }
 
 /**
@@ -175,7 +213,8 @@ int main(int argc , char** argv )
 	std::cout<<"Time elapsed "<<(t2.tv_sec-t1.tv_sec)*1000000+(t2.tv_usec-t1.tv_usec)<<"µs"<<std::endl;
 	drawKeypoints( img, keypoints, img_keypoints, Scalar::all(-1), DrawMatchesFlags::DEFAULT );
 	imshow("frame",img_keypoints);
-	//waitKey();
+	waitKey();
 
 	return 0;
 }
+
