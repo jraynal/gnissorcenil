@@ -70,6 +70,9 @@ void filter_threshold(Mat& input, Mat& output, uchar low, uchar high) {
 	}
 }
 
+/**
+ * Calcule les coordonnées de la nouvelle intersection
+ **/
 bool computeIntersection(Point p1, Point p2, Point p3, Point p4, Point& new_point) {
 	// Store the values for fast access and easy
 	// equations-to-code conversion
@@ -163,13 +166,22 @@ bool detectIntersection(Mat subpic, Point& new_point) {
 		line(cdst, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,255), 2, CV_AA);
 	}
 
-	imshow("lines", cdst);
-
 	if(lines.size() >1)
 		return intersection(cdst, lines, new_point);
 	else
 		return false;
 }
+
+/**
+ * Compare la quantité de pixel blancs et verts
+ **/
+bool white_green_threshold(Mat& simg) {
+	Mat hist;
+	calchist();
+
+
+}
+
 
 /**
  * Binarisation d'une image de manière à isoler le blanc et diminuer le bruit
@@ -185,7 +197,7 @@ bool binariseAndSort(Mat& simg, Point& new_point) {
 
 	// Met en evidence les éléments les plus blancs de l'image
 	threshold(channels[2], white_selection, 190, 255, THRESH_BINARY);
-	filter_threshold(channels[0], green_selection, 75, 150); // May need some tuning
+	filter_threshold(channels[0], green_selection, 50, 120); // May need some tuning
 	bitwise_and(white_selection, green_selection, binar_result);
 
 	// Recherche le croisement
@@ -230,7 +242,7 @@ void selectSubPics(Mat& img, vector<KeyPoint>& keypoints) {
 		}
 	}
 	keypoints.clear();
-	for(int i=0; i<new_keypoints.size();i++){
+	for(uint i=0; i<new_keypoints.size();i++){
 		keypoints.push_back(new_keypoints[i]);
 	}
 	return;
@@ -267,6 +279,10 @@ int main(int argc , char** argv )
 	std::vector<KeyPoint> keypoints;
 	Mat img = imread( argv[1]);
 	Mat clip = imread( argv[2]);
+	// Blur enhance results... but miss a lot of them!
+	Mat blured=img.clone();
+	medianBlur(img,blured,3);
+
 
 	global_width=img.cols;
 	global_height=img.rows;
@@ -274,7 +290,7 @@ int main(int argc , char** argv )
 	keypoints.clear();
 	gettimeofday(&t1,NULL);
 
-	detectFeatures(img,clip,keypoints);
+	detectFeatures(blured,clip,keypoints);
 
 	gettimeofday(&t2,NULL);
 
