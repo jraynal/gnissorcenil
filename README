@@ -29,4 +29,14 @@ Sujet:
 Buts:
 	Etre capable de détecter les intersections de lignes blanches
 sur une video en temps limité avec un minimum de faux positifs.
-	
+
+Compilation:
+	Le Makefile a été généré à partir du fichier de projet QT. Pour
+compiler il suffit de faire un make dans le répertoire des sources.	
+
+Synopsis:
+	intersectionLignes <image> <masque de l'image>
+
+Comportement attendu:
+	L'exécutable recherchera les intersections de lignes blanches sur
+fond vert dans l'image.

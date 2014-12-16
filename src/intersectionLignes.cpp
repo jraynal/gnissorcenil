@@ -173,17 +173,6 @@ bool detectIntersection(Mat subpic, Point& new_point) {
 }
 
 /**
- * Compare la quantité de pixel blancs et verts
- **/
-bool white_green_threshold(Mat& simg) {
-	Mat hist;
-	calchist();
-
-
-}
-
-
-/**
  * Binarisation d'une image de manière à isoler le blanc et diminuer le bruit
  **/
 bool binariseAndSort(Mat& simg, Point& new_point) {
@@ -194,6 +183,7 @@ bool binariseAndSort(Mat& simg, Point& new_point) {
 	Mat channels[3];
 	split(hsv,channels);
 	Mat white_selection, green_selection(channels[0]), binar_result;
+	Mat blured;
 
 	// Met en evidence les éléments les plus blancs de l'image
 	threshold(channels[2], white_selection, 190, 255, THRESH_BINARY);
@@ -280,9 +270,6 @@ int main(int argc , char** argv )
 	Mat img = imread( argv[1]);
 	Mat clip = imread( argv[2]);
 	// Blur enhance results... but miss a lot of them!
-	Mat blured=img.clone();
-	medianBlur(img,blured,3);
-
 
 	global_width=img.cols;
 	global_height=img.rows;
@@ -290,7 +277,7 @@ int main(int argc , char** argv )
 	keypoints.clear();
 	gettimeofday(&t1,NULL);
 
-	detectFeatures(blured,clip,keypoints);
+	detectFeatures(img,clip,keypoints);
 
 	gettimeofday(&t2,NULL);
 
